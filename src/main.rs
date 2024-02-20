@@ -11,17 +11,17 @@ mod stepping;
 
 // Tower
 const TOWER_DIAMETER: f32 = 50.;
-const TOWER_ATTACK_RADIUS: f32 = 5.;
+const TOWER_ATTACK_RANGE_DIAMETER: f32 = 300.;
 const TOWER_STARTING_POSITION: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 // Enemy
 const ENEMY_DIAMETER: f32 = 40.;
-const ENEMY_STARTING_POSITION: Vec3 = Vec3::new(100.0, 100.0, 0.0);
-const ENEMY_SPEED: f32 = 150.0;
+const ENEMY_STARTING_POSITION: Vec3 = Vec3::new(180.0, 160.0, 0.0);
+const ENEMY_SPEED: f32 = 100.0;
 
 // Colors -------------------------------------
 // Tower
 const TOWER_COLOR: Color = Color::rgb(132.0 / 255.0, 211.0 / 255.0, 149.0 / 255.0);
-const TOWER_ATTACK_RADIUS_COLOR: Color = Color::rgba(0.0, 0.0, 1.0, 0.5);
+const TOWER_ATTACK_RANGE_COLOR: Color = Color::rgba(0.0, 0.0, 1.0, 0.5);
 // Enemy
 const ENEMY_COLOR: Color = Color::rgb(255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0);
 // Button
@@ -46,7 +46,10 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(
             FixedUpdate,
-            (move_enemy)
+            (
+                move_enemy,
+                check_for_collision
+            )
                 // `chain`ing systems together runs them in order
                 .chain(),
         )
@@ -64,13 +67,19 @@ fn main() {
 struct Tower;
 
 #[derive(Component)]
-struct TowerAttackRadius;
+struct TowerRange;
 
 #[derive(Component)]
 struct Enemy;
 
+#[derive(Component)]
+struct Health(f32);
+
 #[derive(Component, Deref, DerefMut)]
 struct Velocity(Vec2);
+
+#[derive(Component)]
+struct Collider;
 
 fn button_system(
     mut interaction_query: Query<
@@ -172,13 +181,14 @@ fn setup(
         ));
     commands
         .spawn((
-            SpriteBundle {
-                transform: Transform::from_translation(TOWER_STARTING_POSITION),
-                  //  .with_scale(Vec2::splat(TOWER_ATTACK_RADIUS).extend(1.)),
-                texture: asset_server.load("sprites/attack_range.png"),
+            MaterialMesh2dBundle {
+                mesh: meshes.add(Circle::default()).into(),
+                material: materials.add(TOWER_ATTACK_RANGE_COLOR),
+                transform: Transform::from_translation(TOWER_STARTING_POSITION)
+                    .with_scale(Vec2::splat(TOWER_ATTACK_RANGE_DIAMETER).extend(1.)),
                 ..default()
             },
-            TowerAttackRadius,
+            TowerRange,
         ));
 
     // Enemy
@@ -192,7 +202,8 @@ fn setup(
                 ..default()
             },
             Enemy,
-            Velocity(Vec2::new(1.0, 0.0) * ENEMY_SPEED),
+            Health(100.),
+            Velocity(Vec2::new(0.,0.) * ENEMY_SPEED),
         ));
 }
 
@@ -205,7 +216,27 @@ fn move_enemy(
         let direction = (tower_transform.translation - transform.translation).normalize();
         transform.translation.x += direction.x * ENEMY_SPEED * time.delta_seconds();
         transform.translation.y += direction.y * ENEMY_SPEED * time.delta_seconds();
-        info!("transform.translation.x: {}", transform.translation.x);
-        info!("velocity.0.x: {}",  velocity.0.x );
+    }
+}
+
+fn check_for_collision(
+    mut commands: Commands,
+    mut enemy_query: Query<(Entity, &Transform, &mut Health), With<Enemy>>,
+    tower_query: Query<&Transform, With<TowerRange>>,
+){
+    for (entity, transform,mut health) in &mut enemy_query{
+        let tower_range_transform = tower_query.single();
+        let distance = transform.translation.distance(tower_range_transform.translation);
+        if distance < TOWER_ATTACK_RANGE_DIAMETER / 2. {
+            info!("Enemy is in range  distance: {}", distance);
+            health.0 -= 1.;
+            info!("Enemy health: {}", health.0);
+            if health.0 <= 0. {
+                commands.entity(entity).despawn();
+            }
+        }
+        else {
+            info!("Enemy is not in range");
+        }
     }
 }
