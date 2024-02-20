@@ -6,15 +6,23 @@ use bevy::{
 
 mod stepping;
 
+// Tower
 const TOWER_DIAMETER: f32 = 50.;
 const TOWER_STARTING_POSITION: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+// Enemy
+const ENEMY_DIAMETER: f32 = 40.;
+const ENEMY_STARTING_POSITION: Vec3 = Vec3::new(100.0, 100.0, 0.0);
+const ENEMY_SPEED: f32 = 150.0;
 
-// Colors
+// Colors -------------------------------------
+// Tower
+const TOWER_COLOR: Color = Color::rgb(132.0 / 255.0, 211.0 / 255.0, 149.0 / 255.0);
+// Enemy
+const ENEMY_COLOR: Color = Color::rgb(255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0);
+// Button
 const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
-const TOWER_COLOR: Color = Color::rgb(132.0 / 255.0, 211.0 / 255.0, 149.0 / 255.0);
-
 
 fn main() {
     App::new()
@@ -31,12 +39,12 @@ fn main() {
                 .at(Val::Percent(35.0), Val::Percent(50.0)),
         )
         .add_systems(Startup, setup)
-        // .add_systems(
-        //     FixedUpdate,
-        //     ()
-        //         // `chain`ing systems together runs them in order
-        //         .chain(),
-        // )
+        .add_systems(
+            FixedUpdate,
+            (move_enemy)
+                // `chain`ing systems together runs them in order
+                .chain(),
+        )
         .add_systems(
             Update,
             (
@@ -49,6 +57,12 @@ fn main() {
 
 #[derive(Component)]
 struct Tower;
+
+#[derive(Component)]
+struct Enemy;
+
+#[derive(Component, Deref, DerefMut)]
+struct Velocity(Vec2);
 
 fn button_system(
     mut interaction_query: Query<
@@ -148,4 +162,32 @@ fn setup(
             },
             Tower,
         ));
+
+    // Enemy
+    commands
+        .spawn((
+            MaterialMesh2dBundle {
+                mesh: meshes.add(Circle::default()).into(),
+                material: materials.add(ENEMY_COLOR),
+                transform: Transform::from_translation(ENEMY_STARTING_POSITION)
+                    .with_scale(Vec2::splat(ENEMY_DIAMETER).extend(1.)),
+                ..default()
+            },
+            Enemy,
+            Velocity(Vec2::new(1.0, 0.0) * ENEMY_SPEED),
+        ));
+}
+
+fn move_enemy(
+    mut query: Query<(&mut Transform, &Velocity), With<Enemy>>, time: Res<Time>,
+    tower_query: Query<& Transform, (With<Tower> ,Without<Enemy>)>,
+){
+    for(mut transform, velocity) in &mut query{
+        let tower_transform = tower_query.single();
+        let direction = (tower_transform.translation - transform.translation).normalize();
+        transform.translation.x += direction.x * ENEMY_SPEED * time.delta_seconds();
+        transform.translation.y += direction.y * ENEMY_SPEED * time.delta_seconds();
+        info!("transform.translation.x: {}", transform.translation.x);
+        info!("velocity.0.x: {}",  velocity.0.x );
+    }
 }
