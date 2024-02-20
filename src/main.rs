@@ -11,7 +11,7 @@ mod stepping;
 
 // Tower
 const TOWER_DIAMETER: f32 = 50.;
-const TOWER_ATTACK_RADIUS: f32 = 100.;
+const TOWER_ATTACK_RADIUS: f32 = 5.;
 const TOWER_STARTING_POSITION: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 // Enemy
 const ENEMY_DIAMETER: f32 = 40.;
@@ -172,11 +172,10 @@ fn setup(
         ));
     commands
         .spawn((
-            MaterialMesh2dBundle {
-                mesh: meshes.add(Circle::default()).into(),
-                material: materials.add(TOWER_ATTACK_RADIUS_COLOR),
-                transform: Transform::from_translation(TOWER_STARTING_POSITION)
-                    .with_scale(Vec2::splat(TOWER_ATTACK_RADIUS).extend(1.)),
+            SpriteBundle {
+                transform: Transform::from_translation(TOWER_STARTING_POSITION),
+                  //  .with_scale(Vec2::splat(TOWER_ATTACK_RADIUS).extend(1.)),
+                texture: asset_server.load("sprites/attack_range.png"),
                 ..default()
             },
             TowerAttackRadius,
