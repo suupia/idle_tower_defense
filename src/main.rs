@@ -6,6 +6,16 @@ use bevy::{
 
 mod stepping;
 
+const TOWER_DIAMETER: f32 = 50.;
+const TOWER_STARTING_POSITION: Vec3 = Vec3::new(0.0, 0.0, 0.0);
+
+// Colors
+const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
+const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
+const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
+const TOWER_COLOR: Color = Color::rgb(132.0 / 255.0, 211.0 / 255.0, 149.0 / 255.0);
+
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(bevy::log::LogPlugin {
@@ -36,9 +46,9 @@ fn main() {
         )
         .run();
 }
-const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
-const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
-const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
+
+#[derive(Component)]
+struct Tower;
 
 fn button_system(
     mut interaction_query: Query<
@@ -77,9 +87,15 @@ fn button_system(
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>) {
     // ui camera
     commands.spawn(Camera2dBundle::default());
+
+    // ui button
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -119,4 +135,17 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     ));
                 });
         });
+
+    // Tower
+    commands
+        .spawn((
+            MaterialMesh2dBundle {
+                mesh: meshes.add(Circle::default()).into(),
+                material: materials.add(TOWER_COLOR),
+                transform: Transform::from_translation(TOWER_STARTING_POSITION)
+                    .with_scale(Vec2::splat(TOWER_DIAMETER).extend(1.)),
+                ..default()
+            },
+            Tower,
+        ));
 }
