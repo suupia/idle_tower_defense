@@ -3,11 +3,15 @@ use bevy::{
     prelude::*,
     sprite::MaterialMesh2dBundle,
 };
+use bevy::reflect::TypePath;
+// use bevy_common_assets::json::JsonAssetPlugin;
+
 
 mod stepping;
 
 // Tower
 const TOWER_DIAMETER: f32 = 50.;
+const TOWER_ATTACK_RADIUS: f32 = 100.;
 const TOWER_STARTING_POSITION: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 // Enemy
 const ENEMY_DIAMETER: f32 = 40.;
@@ -17,6 +21,7 @@ const ENEMY_SPEED: f32 = 150.0;
 // Colors -------------------------------------
 // Tower
 const TOWER_COLOR: Color = Color::rgb(132.0 / 255.0, 211.0 / 255.0, 149.0 / 255.0);
+const TOWER_ATTACK_RADIUS_COLOR: Color = Color::rgba(0.0, 0.0, 1.0, 0.5);
 // Enemy
 const ENEMY_COLOR: Color = Color::rgb(255.0 / 255.0, 0.0 / 255.0, 0.0 / 255.0);
 // Button
@@ -57,6 +62,9 @@ fn main() {
 
 #[derive(Component)]
 struct Tower;
+
+#[derive(Component)]
+struct TowerAttackRadius;
 
 #[derive(Component)]
 struct Enemy;
@@ -161,6 +169,17 @@ fn setup(
                 ..default()
             },
             Tower,
+        ));
+    commands
+        .spawn((
+            MaterialMesh2dBundle {
+                mesh: meshes.add(Circle::default()).into(),
+                material: materials.add(TOWER_ATTACK_RADIUS_COLOR),
+                transform: Transform::from_translation(TOWER_STARTING_POSITION)
+                    .with_scale(Vec2::splat(TOWER_ATTACK_RADIUS).extend(1.)),
+                ..default()
+            },
+            TowerAttackRadius,
         ));
 
     // Enemy
