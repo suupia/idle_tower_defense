@@ -4,6 +4,7 @@ use bevy::{
     sprite::MaterialMesh2dBundle,
 };
 use bevy::reflect::TypePath;
+use log::log;
 // use bevy_common_assets::json::JsonAssetPlugin;
 
 
@@ -16,7 +17,7 @@ const TOWER_STARTING_POSITION: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 // Enemy
 const ENEMY_DIAMETER: f32 = 40.;
 const ENEMY_STARTING_POSITION: Vec3 = Vec3::new(180.0, 160.0, 0.0);
-const ENEMY_SPEED: f32 = 100.0;
+const ENEMY_SPEED: f32 = 40.0;
 
 // Colors -------------------------------------
 // Tower
@@ -95,26 +96,29 @@ fn button_system(
 ) {
     for (interaction, mut color, mut border_color, children) in &mut interaction_query {
         let mut text = text_query.get_mut(children[0]).unwrap();
+        let logfunc = |interaction: &Interaction| match interaction {
+            Interaction::Pressed => info!("Pressed"),
+            Interaction::Hovered => info!("Hovered"),
+            Interaction::None => info!("None"),
+        };
         match *interaction {
             Interaction::Pressed => {
                 text.sections[0].value = "Press".to_string();
                 *color = PRESSED_BUTTON.into();
                 border_color.0 = Color::RED;
-                info!("Pressed");
             }
             Interaction::Hovered => {
                 text.sections[0].value = "Hover".to_string();
                 *color = HOVERED_BUTTON.into();
                 border_color.0 = Color::WHITE;
-                info!("Hovered");
             }
             Interaction::None => {
                 text.sections[0].value = "Button".to_string();
                 *color = NORMAL_BUTTON.into();
                 border_color.0 = Color::BLACK;
-                info!("None");
             }
         }
+        logfunc(interaction);
     }
 }
 
@@ -228,15 +232,15 @@ fn check_for_collision(
         let tower_range_transform = tower_query.single();
         let distance = transform.translation.distance(tower_range_transform.translation);
         if distance < TOWER_ATTACK_RANGE_DIAMETER / 2. {
-            info!("Enemy is in range  distance: {}", distance);
+            // info!("Enemy is in range  distance: {}", distance);
             health.0 -= 1.;
-            info!("Enemy health: {}", health.0);
+            // info!("Enemy health: {}", health.0);
             if health.0 <= 0. {
                 commands.entity(entity).despawn();
             }
         }
         else {
-            info!("Enemy is not in range");
+            // info!("Enemy is not in range");
         }
     }
 }
